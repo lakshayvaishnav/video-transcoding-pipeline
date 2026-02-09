@@ -26,7 +26,8 @@
     "pino": "^8.17.2",
     "zod": "^3.22.4",
     "@video-transcoder/database": "workspace:*",
-    "@video-transcoder/shared-types": "workspace:*"
+    "@video-transcoder/shared-types": "workspace:*",
+    "@video-transcoder/kafka-client": "workspace:*"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

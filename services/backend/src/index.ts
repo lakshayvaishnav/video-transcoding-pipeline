@@ -8,6 +8,8 @@ import { config } from "./config.js";
 import helmet from "@fastify/helmet";
 import { errorHandler } from "./plugins/error-handler.js";
 import { authRoutes } from "./routes/auth.js";
+import { shutdownServices } from "./services/index.js";
+import { uploadRoutes } from "./routes/upload.js";
 
 const app = Fastify({
   logger: {
@@ -57,7 +59,8 @@ async function buildApp() {
 
   app.setErrorHandler(errorHandler);
 
-  await app.register(authRoutes, { prefix: "/api" });
+  await app.register(authRoutes, { prefix: "/api/auth" });
+  await app.register(uploadRoutes, { prefix: "/api/upload" });
 
   return app;
 }
@@ -81,7 +84,7 @@ signals.forEach((signal) => {
   process.on(signal, async () => {
     app.log.info(`Recieved ${signal}, shutting down gracefully...`);
     await app.close();
-    // todo: add shutdown services...
+    await shutdownServices();
     process.exit();
   });
 });

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@video-transcoder/database";
 import { request } from "http";
 import { randomUUID } from "crypto";
+import { generatePresignedDownloadUrl, generatePresignedUploadUrl } from "../services/s3.js";
 
 const presignRequestSchema = z.object({
   filename: z.string().min(1).max(255),
@@ -94,6 +95,88 @@ export async function uploadRoutes(app: FastifyInstance) {
       });
 
       // generate presigned url
+      const presigned = await generatePresignedUploadUrl(objectKey, body.contentType);
+
+      return reply.send({
+        uploadId,
+        uploadUrl: presigned.uploadUrl,
+        objectKey: presigned.objectKey,
+        expiresIn: presigned.expiresIn,
+      });
+    },
+  );
+
+  app.post<{ Params: { uploadId: string } }>(
+    "/:uploadId/complete",
+    {
+      schema: {
+        description: "Notify that an upload has completed",
+        tags: ["Upload"],
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          required: ["uploadId"],
+          properties: {
+            uploadId: { type: "string", format: "uuid" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = request.user as { id: string };
+      const { uploadId } = request.params;
+
+      // Find and validate upload ownership
+      const upload = await prisma.upload.findFirst({
+        where: {
+          id: uploadId,
+          userId: user.id,
+        },
+      });
+
+      if (!upload) {
+        return reply.status(404).send({
+          statusCode: 404,
+          error: "Not Found",
+          message: "Upload not found",
+        });
+      }
+
+      if (upload.status !== "PENDING") {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: "Bad Request",
+          message: `Upload already has status: ${upload.status}`,
+        });
+      }
+
+      // Update status and emit event
+      await prisma.upload.update({
+        where: { id: uploadId },
+        data: { status: "UPLOADED" },
+      });
+
+      // Import Kafka client and publish event
+      const { getKafkaClient } = await import("../services/index.js");
+      const { createEvent } = await import("@video-transcoder/kafka-client");
+      const { KAFKA_TOPICS } = await import("@video-transcoder/shared-types");
+
+      const event = createEvent<UploadCreatedEvent>("UploadCreated", {
+        uploadId: upload.id,
+        userId: upload.userId,
+        objectKey: upload.objectKey,
+        bucket: "videos",
+        filename: upload.filename,
+        contentType: upload.contentType,
+        size: Number(upload.size),
+        metadata: upload.metadata as Record<string, unknown> | undefined,
+      });
+
+      await getKafkaClient().publish(KAFKA_TOPICS.UPLOADS, event, upload.userId);
+
+      request.log.info({ uploadId, userId: user.id }, "Upload completed, event published");
+
+      return reply.status(200).send({ status: "ok", uploadId });
     },
   );
 }
