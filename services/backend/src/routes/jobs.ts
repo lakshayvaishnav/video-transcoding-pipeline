@@ -25,10 +25,6 @@ export async function jobRoutes(app: FastifyInstance) {
     }
   });
 
-  /**
-   * GET /api/jobs
-   * List all jobs for the authenticated user
-   */
   app.get(
     "/",
     {
@@ -98,10 +94,6 @@ export async function jobRoutes(app: FastifyInstance) {
     },
   );
 
-  /**
-   * GET /api/jobs/:jobId
-   * Get detailed job information with outputs
-   */
   app.get<{ Params: { jobId: string } }>(
     "/:jobId",
     {
