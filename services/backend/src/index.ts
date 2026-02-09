@@ -6,6 +6,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import cors from "@fastify/cors";
 import { config } from "./config.js";
 import helmet from "@fastify/helmet";
+import { errorHandler } from "./plugins/error-handler.js";
 
 const app = Fastify({
   logger: {
@@ -59,8 +60,7 @@ async function buildApp() {
     },
   });
 
-  // add the error handler
-  // app.setErrorHandler()
+  app.setErrorHandler(errorHandler);
 
   return app;
 }
