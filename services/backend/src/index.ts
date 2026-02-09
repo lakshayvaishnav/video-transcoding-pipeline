@@ -6,7 +6,6 @@ import swaggerUi from "@fastify/swagger-ui";
 import cors from "@fastify/cors";
 import { config } from "./config.js";
 import helmet from "@fastify/helmet";
-import { object } from "zod/v4";
 
 const app = Fastify({
   logger: {
@@ -82,3 +81,5 @@ async function start() {
     process.exit(1);
   }
 }
+
+start();
