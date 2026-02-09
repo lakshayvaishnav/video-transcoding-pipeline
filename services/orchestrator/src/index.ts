@@ -1,6 +1,8 @@
 import pino from "pino";
 import { config } from "./config.js";
 import { createKafkaClient, KafkaClient } from "@video-transcoder/kafka-client";
+import { startUploadConsumer } from "./consumers/upload.consumer.js";
+import { startResultsConsumer } from "./consumers/results.consumer.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pinoLogger = (pino as any).default ?? pino;
@@ -24,8 +26,8 @@ async function main() {
   await kafkaClient.connectProducer();
   logger.info("Kafka producer connected");
 
-  // upload consumer
-  // result consumer
+  await startUploadConsumer(kafkaClient, logger);
+  await startResultsConsumer(kafkaClient, logger);
 
   logger.info("Orchestrator Service started successfully");
 }
