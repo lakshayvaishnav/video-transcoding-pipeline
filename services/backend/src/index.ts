@@ -82,4 +82,15 @@ async function start() {
   }
 }
 
+// Graceful shutdown
+const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
+signals.forEach((signal) => {
+  process.on(signal, async () => {
+    app.log.info(`Recieved ${signal}, shutting down gracefully...`);
+    await app.close();
+    // todo: add shutdown services...
+    process.exit();
+  });
+});
+
 start();
