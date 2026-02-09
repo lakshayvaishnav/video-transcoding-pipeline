@@ -14,15 +14,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KAFKA_TOPICS = void 0;
-__exportStar(require("./events.js"), exports);
-__exportStar(require("./api.js"), exports);
-// Kafka Topics
-exports.KAFKA_TOPICS = {
-    UPLOADS: "uploads",
-    TRANSCODE_JOBS: "transcode-jobs",
-    TRANSCODE_RESULTS: "transcode-results",
-    TRANSCODE_DLQ: "transcode-dlq",
-    NOTIFICATIONS: "notifications",
-};
+exports.createKafkaClient = exports.KafkaClient = void 0;
+var client_js_1 = require("./client.js");
+Object.defineProperty(exports, "KafkaClient", { enumerable: true, get: function () { return client_js_1.KafkaClient; } });
+Object.defineProperty(exports, "createKafkaClient", { enumerable: true, get: function () { return client_js_1.createKafkaClient; } });
+__exportStar(require("./utils.js"), exports);
 //# sourceMappingURL=index.js.map
