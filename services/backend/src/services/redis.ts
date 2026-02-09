@@ -36,6 +36,27 @@ export async function closeRedis(): Promise<void> {
 
 const DEFAULT_TTL = 300; // 5 minutes
 
+export async function cacheGet<T>(key: string): Promise<T | null> {
+  const value = await getRedis().get(key);
+  if (!value) return null;
+  return JSON.parse(value) as T;
+}
+
+export async function cacheSet<T>(key: string, value: T, ttl: number = DEFAULT_TTL): Promise<void> {
+  await getRedis().setex(key, ttl, JSON.stringify(value));
+}
+
+export async function cacheDelete(key: string): Promise<void> {
+  await getRedis().del(key);
+}
+
+export async function cacheInvalidatePattern(pattern: string): Promise<void> {
+  const keys = await getRedis().keys(pattern);
+  if (keys.length > 0) {
+    await getRedis().del(...keys);
+  }
+}
+
 // ========================
 // Deduplication
 // ========================
