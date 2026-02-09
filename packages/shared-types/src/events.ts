@@ -6,7 +6,7 @@ export interface BaseEvent {
 }
 
 // Upload Events
-export interface UploadCreatedEVent extends BaseEvent {
+export interface UploadCreatedEvent extends BaseEvent {
   eventType: "UploadCreated";
   data: {
     uploadId: string;

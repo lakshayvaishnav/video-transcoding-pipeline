@@ -6,20 +6,17 @@ import cors from "@fastify/cors";
 import { config } from "./config.js";
 import helmet from "@fastify/helmet";
 import { errorHandler } from "./plugins/error-handler.js";
+import { authRoutes } from "./routes/auth.js";
 const app = Fastify({
     logger: {
         level: config.server.logLevel,
-        transport: config.server.nodeEnv === "development"
-            ? { target: "pino-pretty", options: { colorize: true } }
-            : undefined,
+        transport: config.server.nodeEnv === "development" ? { target: "pino-pretty", options: { colorize: true } } : undefined,
     },
 });
 async function buildApp() {
     await app.register(helmet, { contentSecurityPolicy: false });
     await app.register(cors, {
-        origin: config.server.nodeEnv === "development"
-            ? true
-            : ["http://localhost:3000"],
+        origin: config.server.nodeEnv === "development" ? true : ["http://localhost:3000"],
         credentials: true,
     });
     await app.register(jwt, {
@@ -52,6 +49,7 @@ async function buildApp() {
         },
     });
     app.setErrorHandler(errorHandler);
+    await app.register(authRoutes, { prefix: "/api" });
     return app;
 }
 async function start() {
