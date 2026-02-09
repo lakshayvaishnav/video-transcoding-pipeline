@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/.next
+**/out
+
+# Development files
+.git
+.github
+.vscode
+.idea
+*.log
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/tests
+**/coverage
+
+# Local development
+.env
+.env.local
+.env*.local
+tools/local-dev
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+Thumbs.db

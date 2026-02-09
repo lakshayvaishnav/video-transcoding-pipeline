@@ -1,14 +1,24 @@
 {
   "name": "video-transcoder",
   "version": "1.0.0",
-  "description": "production grade video transcoding platform",
+  "private": true,
+  "description": "Production-grade video transcoding platform",
   "scripts": {
-    "build": "pnpm -r run build"
+    "dev": "set -a && . ./.env && set +a && pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:integration": "pnpm --filter @video-transcoder/tests-integration test",
+    "test:e2e": "pnpm --filter @video-transcoder/tests-e2e test",
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "pnpm -r run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @video-transcoder/database generate",
+    "db:migrate": "pnpm --filter @video-transcoder/database migrate:dev",
+    "db:push": "pnpm --filter @video-transcoder/database push",
+    "docker:up": "./tools/local-dev/start.sh",
+    "docker:down": "docker compose -f ./tools/local-dev/docker-compose.yml down -v"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.28.1",
   "devDependencies": {
     "@types/node": "^20.11.0",
     "prettier": "^3.2.4",
@@ -20,5 +30,6 @@
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
-  }
+  },
+  "packageManager": "pnpm@8.14.0"
 }
