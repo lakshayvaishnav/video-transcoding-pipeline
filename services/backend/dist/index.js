@@ -5,6 +5,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import cors from "@fastify/cors";
 import { config } from "./config.js";
 import helmet from "@fastify/helmet";
+import { errorHandler } from "./plugins/error-handler.js";
 const app = Fastify({
     logger: {
         level: config.server.logLevel,
@@ -50,8 +51,7 @@ async function buildApp() {
             deepLinking: true,
         },
     });
-    // add the error handler
-    // app.setErrorHandler()
+    app.setErrorHandler(errorHandler);
     return app;
 }
 async function start() {
@@ -66,5 +66,15 @@ async function start() {
         process.exit(1);
     }
 }
+// Graceful shutdown
+const signals = ["SIGINT", "SIGTERM"];
+signals.forEach((signal) => {
+    process.on(signal, async () => {
+        app.log.info(`Recieved ${signal}, shutting down gracefully...`);
+        await app.close();
+        // todo: add shutdown services...
+        process.exit();
+    });
+});
 start();
 //# sourceMappingURL=index.js.map
