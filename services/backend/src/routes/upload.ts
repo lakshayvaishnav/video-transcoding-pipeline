@@ -2,9 +2,8 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { UploadCreatedEvent } from "@video-transcoder/shared-types";
 import { z } from "zod";
 import { prisma } from "@video-transcoder/database";
-import { request } from "http";
 import { randomUUID } from "crypto";
-import { generatePresignedDownloadUrl, generatePresignedUploadUrl } from "../services/s3.js";
+import { generatePresignedUploadUrl } from "../services/s3.js";
 
 const presignRequestSchema = z.object({
   filename: z.string().min(1).max(255),
