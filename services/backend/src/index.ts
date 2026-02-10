@@ -10,6 +10,8 @@ import { errorHandler } from "./plugins/error-handler.js";
 import { authRoutes } from "./routes/auth.js";
 import { shutdownServices } from "./services/index.js";
 import { uploadRoutes } from "./routes/upload.js";
+import { jobRoutes } from "./routes/jobs.js";
+import { webhookRoutes } from "./routes/webhooks.js";
 
 const app = Fastify({
   logger: {
@@ -61,6 +63,9 @@ async function buildApp() {
 
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(uploadRoutes, { prefix: "/api/upload" });
+  await app.register(uploadRoutes, { prefix: "/api/upload" });
+  await app.register(jobRoutes, { prefix: "/api/jobs" });
+  await app.register(webhookRoutes, { prefix: "/api/webhooks" });
 
   return app;
 }
