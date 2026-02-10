@@ -2,8 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { prisma } from "@video-transcoder/database";
-import { email } from "zod/v4";
-import { request } from "http";
 
 const SALT_ROUNDS = 12;
 

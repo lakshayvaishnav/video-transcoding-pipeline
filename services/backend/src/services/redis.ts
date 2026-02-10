@@ -1,5 +1,4 @@
 import { Redis } from "ioredis";
-import { Config } from "../config.js";
 import { config } from "../config.js";
 
 let redis: Redis | null = null;

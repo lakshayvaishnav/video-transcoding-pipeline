@@ -1,28 +1,28 @@
 import type { FastifyInstance } from "fastify";
-import { z } from "zod";
+// import { z } from "zod";
 import { prisma } from "@video-transcoder/database";
 import { getKafkaClient } from "../services/index.js";
 import { createEvent } from "@video-transcoder/kafka-client";
 import { KAFKA_TOPICS, type UploadCreatedEvent } from "@video-transcoder/shared-types";
 
 // S3 event notification schema (simplified)
-const s3EventSchema = z.object({
-  Records: z.array(
-    z.object({
-      eventSource: z.literal("aws:s3"),
-      eventName: z.string(),
-      s3: z.object({
-        bucket: z.object({
-          name: z.string(),
-        }),
-        object: z.object({
-          key: z.string(),
-          size: z.number().optional(),
-        }),
-      }),
-    }),
-  ),
-});
+// const s3EventSchema = z.object({
+//   Records: z.array(
+//     z.object({
+//       eventSource: z.literal("aws:s3"),
+//       eventName: z.string(),
+//       s3: z.object({
+//         bucket: z.object({
+//           name: z.string(),
+//         }),
+//         object: z.object({
+//           key: z.string(),
+//           size: z.number().optional(),
+//         }),
+//       }),
+//     }),
+//   ),
+// });
 
 export async function webhookRoutes(app: FastifyInstance) {
   /**
