@@ -20,7 +20,7 @@ async function main() {
   kafkaClient = createKafkaClient({
     brokers: config.kafka.brokers,
     clientId: "orchestrator-service",
-    logLevel: config.nodeEnv === "development" ? "debug" : "warn",
+    logLevel: config.nodeEnv === "development" ? "info" : "warn",
   });
 
   await kafkaClient.connectProducer();

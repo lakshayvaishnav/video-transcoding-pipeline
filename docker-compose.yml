@@ -115,39 +115,6 @@ services:
         exit 0;
       "
 
-  # FFmpeg Worker Service (containerized with ffmpeg pre-installed)
-  # worker-ffmpeg:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/worker-ffmpeg/Dockerfile
-  #   container_name: vt-worker-ffmpeg
-  #   depends_on:
-  #     redpanda:
-  #       condition: service_healthy
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     minio:
-  #       condition: service_healthy
-  #   environment:
-  #     NODE_ENV: development
-  #     DATABASE_URL: postgresql://transcoder:transcoder_secret@postgres:5432/video_transcoder
-  #     REDIS_URL: redis://redis:6379
-  #     KAFKA_BROKERS: redpanda:9092
-  #     S3_ENDPOINT: http://minio:9000
-  #     S3_ACCESS_KEY: minioadmin
-  #     S3_SECRET_KEY: minioadmin123
-  #     S3_BUCKET_UPLOADS: videos
-  #     S3_BUCKET_OUTPUTS: transcoded
-  #     S3_REGION: us-east-1
-  #     S3_FORCE_PATH_STYLE: "true"
-  #     TEMP_DIR: /tmp/transcode
-  #     LOG_LEVEL: debug
-  #   volumes:
-  #     - worker_temp:/tmp/transcode
-  #   restart: unless-stopped
-
 volumes:
   redpanda_data:
   postgres_data:

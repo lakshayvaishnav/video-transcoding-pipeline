@@ -63,7 +63,6 @@ async function buildApp() {
 
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(uploadRoutes, { prefix: "/api/upload" });
-  await app.register(uploadRoutes, { prefix: "/api/upload" });
   await app.register(jobRoutes, { prefix: "/api/jobs" });
   await app.register(webhookRoutes, { prefix: "/api/webhooks" });
 
