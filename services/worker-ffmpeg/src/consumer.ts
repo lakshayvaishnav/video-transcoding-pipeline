@@ -1,5 +1,5 @@
-import type { Logger } from 'pino';
-import { type KafkaClient, createEvent } from '@video-transcoder/kafka-client';
+import type { Logger } from "pino";
+import { type KafkaClient, createEvent } from "@video-transcoder/kafka-client";
 import {
   KAFKA_TOPICS,
   type TranscodeRequestedEvent,
@@ -7,39 +7,38 @@ import {
   type TranscodeFailedEvent,
   type TranscodeProgressEvent,
   type TranscodeOutput,
-} from '@video-transcoder/shared-types';
-import { config } from './config.js';
-import { downloadSourceFile, cleanupTempDir } from './utils/fs.js';
-import { transcodeToProfile, getVideoMetadata } from './transcoder.js';
-import { generateThumbnails } from './thumbnail.js';
-import { uploadOutputs } from './uploader.js';
+} from "@video-transcoder/shared-types";
+import { config } from "./config.js";
+import { downloadSourceFile, cleanupTempDir } from "./utils/fs.js";
+import { transcodeToProfile, getVideoMetadata } from "./transcoder.js";
+import { generateThumbnails } from "./thumbnail.js";
+import { uploadOutputs } from "./uploader.js";
 
 export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger): Promise<void> {
   await kafkaClient.createConsumer(
     config.kafka.groupId,
     [KAFKA_TOPICS.TRANSCODE_JOBS],
     async (event, _metadata) => {
-      if (event.eventType !== 'TranscodeRequested') {
-        logger.warn({ eventType: event.eventType }, 'Unexpected event type');
+      if (event.eventType !== "TranscodeRequested") {
+        logger.warn({ eventType: event.eventType }, "Unexpected event type");
         return;
       }
 
       const jobEvent = event as TranscodeRequestedEvent;
-      const { jobId, uploadId, userId, sourceKey, sourceBucket, outputPrefix, profiles } =
-        jobEvent.data;
+      const { jobId, uploadId, userId, sourceKey, sourceBucket, outputPrefix, profiles } = jobEvent.data;
 
       const jobDir = `${config.tempDir}/${jobId}`;
       const startTime = Date.now();
 
-      logger.info({ jobId, uploadId, profiles: profiles.length }, 'Starting transcode job');
+      logger.info({ jobId, uploadId, profiles: profiles.length }, "Starting transcode job");
 
       try {
         // Download source file
         const sourcePath = await downloadSourceFile(sourceBucket, sourceKey, jobDir, logger);
-        logger.info({ jobId, sourcePath }, 'Source file downloaded');
+        logger.info({ jobId, sourcePath }, "Source file downloaded");
 
         // Send initial progress
-        await publishProgress(kafkaClient, jobId, uploadId, userId, 5, 'Downloading complete');
+        await publishProgress(kafkaClient, jobId, uploadId, userId, 5, "Downloading complete");
 
         // Get video metadata to avoid upscaling
         const sourceMetadata = await getVideoMetadata(sourcePath);
@@ -51,12 +50,10 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
         if (profilesToTranscode.length === 0) {
           logger.warn(
             { jobId, sourceHeight: sourceMetadata.height },
-            'All profiles require upscaling. Using smallest profile as fallback.'
+            "All profiles require upscaling. Using smallest profile as fallback.",
           );
           // If all profiles are larger, just use the smallest one
-          const smallestProfile = profiles.reduce((prev, curr) =>
-            prev.height < curr.height ? prev : curr
-          );
+          const smallestProfile = profiles.reduce((prev, curr) => (prev.height < curr.height ? prev : curr));
           profilesToTranscode = [smallestProfile];
         }
 
@@ -68,7 +65,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
             filteredCount: profilesToTranscode.length,
             profiles: profilesToTranscode.map((p) => p.name),
           },
-          'Filtered transcoding profiles'
+          "Filtered transcoding profiles",
         );
 
         const outputs: TranscodeOutput[] = [];
@@ -79,14 +76,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
           const profile = profilesToTranscode[i]!;
           const progress = 10 + Math.floor((i / profilesToTranscode.length) * 70);
 
-          await publishProgress(
-            kafkaClient,
-            jobId,
-            uploadId,
-            userId,
-            progress,
-            `Transcoding ${profile.name}`
-          );
+          await publishProgress(kafkaClient, jobId, uploadId, userId, progress, `Transcoding ${profile.name}`);
 
           const { hlsPath } = await transcodeToProfile(sourcePath, jobDir, profile, logger);
 
@@ -98,7 +88,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
           });
 
           outputs.push({
-            type: 'mp4',
+            type: "mp4",
             path: `${outputPrefix}${profile.name}.mp4`,
             profileName: profile.name,
             resolution: `${profile.width}x${profile.height}`,
@@ -106,7 +96,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
           });
 
           outputs.push({
-            type: 'hls_variant',
+            type: "hls_variant",
             path: `${outputPrefix}hls/${profile.name}/playlist.m3u8`,
             profileName: profile.name,
             resolution: `${profile.width}x${profile.height}`,
@@ -114,14 +104,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
           });
         }
 
-        await publishProgress(
-          kafkaClient,
-          jobId,
-          uploadId,
-          userId,
-          80,
-          'Generating master playlist'
-        );
+        await publishProgress(kafkaClient, jobId, uploadId, userId, 80, "Generating master playlist");
 
         // Generate master HLS playlist
         // const masterPlaylistPath = await generateHlsPlaylist(jobDir, variantPlaylists, logger);
@@ -131,24 +114,24 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
         //   manifestUrl: `${outputPrefix}hls/master.m3u8`,
         // });
 
-        await publishProgress(kafkaClient, jobId, uploadId, userId, 85, 'Generating thumbnails');
+        await publishProgress(kafkaClient, jobId, uploadId, userId, 85, "Generating thumbnails");
 
         // Generate thumbnails
         const thumbnails = await generateThumbnails(sourcePath, jobDir, logger);
         for (const thumb of thumbnails) {
           outputs.push({
-            type: thumb.isPoster ? 'poster' : 'thumbnail',
+            type: thumb.isPoster ? "poster" : "thumbnail",
             path: `${outputPrefix}${thumb.filename}`,
           });
         }
 
-        await publishProgress(kafkaClient, jobId, uploadId, userId, 90, 'Uploading outputs');
+        await publishProgress(kafkaClient, jobId, uploadId, userId, 90, "Uploading outputs");
 
         // Upload all outputs to S3
         await uploadOutputs(jobDir, outputPrefix, outputs, logger);
 
         // Publish completion
-        const completedEvent = createEvent<TranscodeCompletedEvent>('TranscodeCompleted', {
+        const completedEvent = createEvent<TranscodeCompletedEvent>("TranscodeCompleted", {
           jobId,
           uploadId,
           userId,
@@ -157,20 +140,20 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
         });
 
         await kafkaClient.publish(KAFKA_TOPICS.TRANSCODE_RESULTS, completedEvent, jobId);
-        logger.info({ jobId, duration: Date.now() - startTime }, 'Transcode job completed');
+        logger.info({ jobId, duration: Date.now() - startTime }, "Transcode job completed");
 
         // Cleanup
         await cleanupTempDir(jobDir);
       } catch (error) {
-        logger.error({ jobId, error }, 'Transcode job failed');
+        logger.error({ jobId, error }, "Transcode job failed");
 
-        const failedEvent = createEvent<TranscodeFailedEvent>('TranscodeFailed', {
+        const failedEvent = createEvent<TranscodeFailedEvent>("TranscodeFailed", {
           jobId,
           uploadId,
           userId,
           error: {
-            code: 'TRANSCODE_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown error',
+            code: "TRANSCODE_ERROR",
+            message: error instanceof Error ? error.message : "Unknown error",
             details: error,
           },
           attempts: 1,
@@ -186,12 +169,12 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
     {
       fromBeginning: false,
       onError: (error) => {
-        logger.error({ error }, 'Job consumer error');
+        logger.error({ error }, "Job consumer error");
       },
-    }
+    },
   );
 
-  logger.info('Job consumer started');
+  logger.info("Job consumer started");
 }
 
 async function publishProgress(
@@ -200,9 +183,9 @@ async function publishProgress(
   uploadId: string,
   userId: string,
   progress: number,
-  message: string
+  message: string,
 ): Promise<void> {
-  const progressEvent = createEvent<TranscodeProgressEvent>('TranscodeProgress', {
+  const progressEvent = createEvent<TranscodeProgressEvent>("TranscodeProgress", {
     jobId,
     uploadId,
     userId,
