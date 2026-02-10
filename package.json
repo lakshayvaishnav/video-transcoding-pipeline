@@ -15,9 +15,7 @@
     "clean": "pnpm -r run clean && rm -rf node_modules",
     "db:generate": "pnpm --filter @video-transcoder/database generate",
     "db:migrate": "pnpm --filter @video-transcoder/database migrate:dev",
-    "db:push": "pnpm --filter @video-transcoder/database push",
-    "docker:up": "./tools/local-dev/start.sh",
-    "docker:down": "docker compose -f ./tools/local-dev/docker-compose.yml down -v"
+    "db:push": "pnpm --filter @video-transcoder/database push"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

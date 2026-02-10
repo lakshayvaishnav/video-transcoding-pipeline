@@ -8,17 +8,17 @@ The system is composed of several microservices communicating via **Kafka** (Red
 
 ```mermaid
 graph TD
-    Client[Client App] -->|Upload Video| API[Backend Service]
-    API -->|Metadata| DB[(PostgreSQL)]
-    API -->|Upload File| S3[(MinIO / S3)]
-    API -->|UploadCreated Event| Kafka{Kafka / Redpanda}
+    Client["Client App"] -->|Upload Video| API["Backend Service"]
+    API -->|Metadata| DB[("PostgreSQL")]
+    API -->|Upload File| S3[("MinIO / S3")]
+    API -->|UploadCreated Event| Kafka{"Kafka / Redpanda"}
 
     subgraph "Event Pipeline"
-        Kafka -->|Consume Uploads| Orch[Orchestrator Service]
+        Kafka -->|Consume Uploads| Orch["Orchestrator Service"]
         Orch -->|Create Job| DB
         Orch -->|TranscodeRequested Event| Kafka
 
-        Kafka -->|Consume Jobs| Worker[Worker Service (FFmpeg)]
+        Kafka -->|Consume Jobs| Worker["Worker Service (FFmpeg)"]
         Worker -->|Download Source| S3
         Worker -->|Transcode| Worker
         Worker -->|Upload Outputs| S3
@@ -29,9 +29,10 @@ graph TD
     end
 
     Client -->|Poll Status / Webhooks| API
+
 ```
 
-## 🚀 Key Features
+## Key Features
 
 - **Scalable Microservices**: Decoupled architecture allowing independent scaling of API, Orchestrator, and Workers.
 - **Event-Driven**: Fully asynchronous processing pipeline using Kafka.
@@ -84,6 +85,70 @@ graph TD
   - Uploads artifacts back to S3.
   - Publishes `TranscodeCompleted` or `TranscodeFailed`.
 
+## 🔄 Detailed Workflow: From Upload to Playback
+
+Here is the step-by-step journey of a video file through the system:
+
+### 1. **Upload Initiation**
+
+- **User Action**: User clicks "Upload" on the frontend.
+- **Frontend**: Requests a **Presigned URL** from the Backend API (`POST /api/upload/presign`).
+- **Backend**:
+  - Authenticates the user.
+  - Generates a unique `uploadId` and S3 object key.
+  - Creates a record in the database with status `PENDING`.
+  - Returns the short-lived S3 upload URL.
+
+### 2. **Direct-to-S3 Upload**
+
+- **Frontend**: Uses the presigned URL to upload the raw video file directly to MinIO/S3.
+- **Optimisation**: This bypasses the backend server, preventing bandwidth bottlenecks.
+
+### 3. **Completion & Event Trigger**
+
+- **Frontend**: Calls the backend completion endpoint (`POST /api/upload/:id/complete`) once the upload finishes.
+- **Backend**:
+  - Verifies the upload record.
+  - Updates status to `UPLOADED`.
+  - Publishes an `UploadCreated` event to the **`uploads`** Kafka topic.
+
+### 4. **Orchestration**
+
+- **Orchestrator Service**: Consumes the `UploadCreated` event.
+- **Action**:
+  - Checks (deduplicates) if this event was already processed.
+  - Determines the **Transcoding Profiles** (e.g., 1080p, 720p, 360p) based on configuration.
+  - Creates a `TranscodeJob` in the database (`QUEUED`).
+  - Publishes a `TranscodeRequested` event to the **`transcode-jobs`** topic.
+
+### 5. **Video Processing (The Worker)**
+
+- **Worker Service**: Consumes the `TranscodeRequested` event.
+- **Action**:
+  - **Download**: Fetches the raw video from S3 to a local temporary directory.
+  - **Probe**: Analyzes video metadata (resolution, codec).
+  - **Filter**: Removes profiles larger than the source (e.g., won't upscale 720p to 1080p).
+  - **Transcode**: Spawns **FFmpeg** processes to generate:
+    - MP4 files for each profile.
+    - HLS Variant Playlists (`.m3u8`) for adaptive streaming.
+    - Thumbnails and poster images.
+  - **Master Playlist**: Generates the master HLS manifest linking all variants.
+  - **Upload**: Pushes all generated artifacts to the `transcoded` S3 bucket.
+  - **Cleanup**: Deletes local temporary files.
+
+### 6. **Feedback Loop**
+
+- **Worker**: Publishes `TranscodeCompleted` (or `TranscodeFailed`) to **`transcode-results`**.
+- **Orchestrator**: Consumes the result event.
+  - Updates `TranscodeJob` status to `COMPLETED` in the database.
+  - Updates `Upload` status to `COMPLETED`.
+
+### 7. **Playback**
+
+- **User**: Navigates to the video page.
+- **Frontend**: API returns the **Master HLS Playlist URL**.
+- **Player**: The video player (`hls.js`) loads the master playlist and automatically adjusts quality based on the user's internet speed.
+
 ## 🔄 Data Flow & Kafka Topics
 
 | Topic               | Producer     | Consumer         | Purpose                                         |
@@ -106,7 +171,7 @@ graph TD
 1. **Start Infrastructure**:
 
    ```bash
-   pnpm run docker:up
+   docker compose up -d
    ```
 
    This spins up Redpanda, Postgres, Redis, and MinIO.
