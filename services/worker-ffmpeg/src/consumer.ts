@@ -43,8 +43,7 @@ export async function startJobConsumer(kafkaClient: KafkaClient, logger: Logger)
         // Get video metadata to avoid upscaling
         const sourceMetadata = await getVideoMetadata(sourcePath);
 
-        // Filter profiles: keep profiles smaller or equal to source height
-        // We add a small tolerance (e.g. 5px) to handle potential rounding or cropping differences
+        // We add a small tolerance (5px) to handle potential rounding or cropping differences
         let profilesToTranscode = profiles.filter((p) => p.height <= sourceMetadata.height + 5);
 
         if (profilesToTranscode.length === 0) {

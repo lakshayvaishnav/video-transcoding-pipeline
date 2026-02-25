@@ -35,7 +35,6 @@ export async function startUploadConsumer(kafkaClient: KafkaClient, logger: Logg
           return;
         }
 
-        // Check if job already exists for this upload
         const existingJob = await prisma.transcodeJob.findFirst({
           where: { uploadId },
         });
@@ -45,7 +44,6 @@ export async function startUploadConsumer(kafkaClient: KafkaClient, logger: Logg
           return;
         }
 
-        // Create transcode job
         const jobId = crypto.randomUUID();
         const outputPrefix = `transcoded/${userId}/${jobId}/`;
 
